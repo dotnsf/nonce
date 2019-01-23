@@ -15,7 +15,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
 
 <script>
-var mining = 1;
+var mininglevel = 1;
 
 var nonce = 0;
 var prev_hash = null;
@@ -31,13 +31,13 @@ $(function(){
     params.forEach( function( param ){
       var kv = param.split( '=' );
       if( kv.length == 2 ){
-        if( kv[0] == 'mining' ){ mining = parseInt( kv[1] ); }
+        if( kv[0] == 'mininglevel' ){ mininglevel = parseInt( kv[1] ); }
         if( kv[0] == 'goal' ){ goal = parseInt( kv[1] ); }
       }
     });
   }
-  $('#thead_hash').text( 'hash(mining=' + mining + ')' );
-  $('#thead_block').text( 'block(goal=' + goal + ')' );
+  $('#jumbotron_mininglevel').text( '' + mininglevel );
+  $('#jumbotron_goal').text( '' + goal );
 
   var ts = ( new Date() ).getTime();
   var name = getRandomName();
@@ -48,6 +48,10 @@ $(function(){
   incNonce();
 
   startTime = ( new Date() ).getTime();
+
+  $( '#myModal').on( 'hidden.bs.modal', function(){
+    console.log( '#myModal closing.' );
+  });
 });
 
 function incNonce(){
@@ -79,7 +83,14 @@ function challenge(){
   if( num >= goal ){
     var endTime = ( new Date() ).getTime();
     var t = ( endTime - startTime ) / 1000;
-    alert( t + '秒かかりました' );
+    //alert( t + '秒かかりました' );
+
+    $('#modaldialog_mininglevel').html( mininglevel );
+    $('#modaldialog_goal').html( goal );
+    $('#modaldialog_second').html( t );
+    $('#modaldialog_timestamp').html( ( new Date() ).getTime() );
+    
+    $('#myModal').modal();
   }else{
     num ++;
     nonce = 0;
@@ -143,7 +154,7 @@ function str2button( str, len ){
   if( str ){
     var l = str.length;
     var ctz = countTopZero( str );
-    var btn_class = ( ctz < mining ? 'danger' : 'success' );
+    var btn_class = ( ctz < mininglevel ? 'danger' : 'success' );
 
     if( btn_class == 'success' ){
       $('#challengeBtn_'+num).css( 'display', 'block' );
@@ -189,28 +200,63 @@ function getRandomAge(){
 </style>
 </head>
 <body>
-<table id="tbl" class="table table-bordered">
-  <thead>
-    <tr><th>#</th><th style="width:30%;">body</th><th>nonce</th><th id="thead_hash">hash</th><th id="thead_block">block</th></tr>
-  </thead>
-  <tbody id="tbody">
-    <tr>
-      <td>1</td>
-      <td>
-        <textarea id="jsontext_1" style="width:100%; height:150px;" readonly="true"></textarea>
-      </td>
-      <td>
-        <input id="incNonceBtn_1" type="button" class="btn btn-primary" value="" onClick="incNonce();"/>
-      </td>
-      <td id="hash_1">
-      </td>
-      <td id="block_1">
-        <blockquote><pre id="result_1">
-        </pre></blockquote>
-      </td>
-    </tr>
-  </tbody>
-</table>
+
+<div class="container">
+  <div class="jumbotron mt-4">
+    <h1 class="display-4">nonce</h1>
+    <p class="lead">
+      MiningLevel = <span id="jumbotron_mininglevel"></span>,
+      Goal = <span id="jumbotron_goal"></span>,
+    </p>
+  </div>
+</div>
+
+<div class="container">
+  <table id="tbl" class="table table-bordered">
+    <thead>
+      <tr><th>#</th><th style="width:30%;">body</th><th>nonce</th><th>hash</th><th>block</th></tr>
+    </thead>
+    <tbody id="tbody">
+      <tr>
+        <td>1</td>
+        <td>
+          <textarea id="jsontext_1" style="width:100%; height:150px;" readonly="true"></textarea>
+        </td>
+        <td>
+          <input id="incNonceBtn_1" type="button" class="btn btn-primary" value="" onClick="incNonce();"/>
+        </td>
+        <td id="hash_1">
+        </td>
+        <td id="block_1">
+          <blockquote><pre id="result_1">
+          </pre></blockquote>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal bd-example-modal-lg fade" id="myModal" tabindex="-1" role="dialog" aria-labbelledby="myModal" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="myModalLabel">nonce</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="myModalBody">
+        <div>MiningLevel = <span id="modaldialog_mininglevel"></span></div>
+        <div>Goal = <span id="modaldialog_goal"></span></div>
+        <div>Second = <span id="modaldialog_second"></span></div>
+        <div>Timestamp = <span id="modaldialog_timestamp"></span></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
