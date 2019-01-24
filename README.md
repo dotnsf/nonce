@@ -29,13 +29,20 @@ Nonce simulator
 
 ## URL Parameters
 
-- mining(1)
+- mininglevel(default: 1)
 
-    - Hash value need to start with mining times '0' as mining rule
+    - Hash value need to start with mininglevel times '0' as mining rule
 
-- goal(3)
+- goal(default: 3)
 
     - Need to create this numbers of block for clearing game.
+
+
+## Licensing
+
+This code is licensed under MIT.
+
+https://github.com/dotnsf/nonce/blob/master/LICENSE
 
 
 ## Copyright
