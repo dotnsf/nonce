@@ -40,9 +40,13 @@ $(function(){
   $('#jumbotron_goal').text( '' + goal );
 
   var ts = ( new Date() ).getTime();
-  var name = getRandomName();
-  var age = getRandomAge();
-  var text = '{\n  "name": "' + name + '",\n  "age":  ' + age + ',\n  "timestamp": ' + ts + '\n}';
+  var from = getRandomName();
+  var to = getRandomName();
+  while( from == to ){
+    to = getRandomName();
+  }
+  var amount = getRandomAmount();
+  var text = '{\n  "from": "' + from + '",\n  "to": "' + to + '",\n  "amount":  ' + amount + ',\n  "timestamp": ' + ts + '\n}';
   $('#jsontext_'+num).html( text );
 
   incNonce();
@@ -104,9 +108,13 @@ function challenge(){
     $('#tbody').append( tr );
 
     var ts = ( new Date() ).getTime();
-    var name = getRandomName();
-    var age = getRandomAge();
-    var text = '{\n  "name": "' + name + '",\n  "age":  ' + age + ',\n  "timestamp": ' + ts + '\n}';
+    var from = getRandomName();
+    var to = getRandomName();
+    while( from == to ){
+      to = getRandomName();
+    }
+    var amount = getRandomAmount();
+    var text = '{\n  "from": "' + from + '",\n  "to": "' + to + '",\n  "amount":  ' + amount + ',\n  "timestamp": ' + ts + '\n}';
     $('#jsontext_'+num).html( text );
     incNonce();
   }
@@ -188,9 +196,9 @@ function getRandomName(){
   return name;
 }
 
-function getRandomAge(){
-  var age = Math.floor( Math.random() * 40 ) + 10;
-  return age;
+function getRandomAmount(){
+  var amount = ( Math.floor( Math.random() * 40 ) + 10 ) * 1000;
+  return amount;
 }
 </script>
 <style>
