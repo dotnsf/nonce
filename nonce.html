@@ -21,6 +21,7 @@ var nonce = 0;
 var prev_hash = null;
 var num = 1;
 var goal = 3;
+var auto = false;
 
 var startTime = null;
 $(function(){
@@ -67,7 +68,26 @@ function incNonce(){
 }
 
 function notvalid(){
-  alert( 'ハッシュ値がマイニングルールを満たしていません。' );
+  //alert( 'ハッシュ値がマイニングルールを満たしていません。' );
+  if( confirm( 'ハッシュ値がマイニングルールを満たしていません。自動計算しますか？' ) ){
+    autoCalc();
+  }
+}
+
+function autoCalc(){
+  auto = true;
+
+  var b = false;
+  do{
+    nonce ++;
+    var text = JSON.parse( $('#jsontext_'+num).html() );
+    var hash = getHash( text, nonce );
+    $('#hash_'+num).html( str2button( hash, 20 ) );
+    $('#incNonceBtn_'+num).prop( 'value', nonce );
+
+    var ctz = countTopZero( hash );
+    b = ( ctz >= mininglevel );
+  }while( !b );
 }
 
 function challenge(){
@@ -93,6 +113,9 @@ function challenge(){
     $('#modaldialog_goal').html( goal );
     $('#modaldialog_second').html( t );
     $('#modaldialog_timestamp').html( ( new Date() ).getTime() );
+    if( auto ){
+      $('#modaldialog_auto').html( '（途中で自動計算を使いました）' );
+    }
 
     $('#myModal').modal();
   }else{
@@ -210,7 +233,7 @@ function getRandomAmount(){
   <div class="jumbotron mt-4">
     <h1 class="display-4">nonce</h1>
     <p class="lead">
-      MiningLevel = <span id="jumbotron_mininglevel"></span>,
+      Mining Level = <span id="jumbotron_mininglevel"></span>,
       Goal = <span id="jumbotron_goal"></span>
     </p>
   </div>
@@ -251,10 +274,11 @@ function getRandomAmount(){
         </button>
       </div>
       <div class="modal-body" id="myModalBody">
-        <div>MiningLevel = <span id="modaldialog_mininglevel"></span></div>
+        <div>Mining Level = <span id="modaldialog_mininglevel"></span></div>
         <div>Goal = <span id="modaldialog_goal"></span></div>
         <div>Second = <span id="modaldialog_second"></span></div>
         <div>Timestamp = <span id="modaldialog_timestamp"></span></div>
+        <div><span id="modaldialog_auto"></span></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
