@@ -194,19 +194,20 @@ function str2button( str, len ){
     }
 
     str1 = str.split( '"' ).join( '&quot;' );
-    s = '<a type="button" class="btn btn-' + btn_class + '" href="#" title="' + str + '"';
+    s = '<input type="button" class="btn btn-' + btn_class + '" href="#" title="' + str + '"';
     if( btn_class == 'success' ){
       s += ' onClick="challenge();"';
     }else{
       s += ' onClick="notvalid();"';
     }
 
-    s += '>';
+    s += ' value="';
     if( l > len ){
-      s += ( str1.substr( 0, len ) + '..</a>' );
+      s += ( str1.substr( 0, len ) + '..' );
     }else{
-      s += ( str1 + '</a>' );
+      s += ( str1 );
     }
+    s += '"/>';
   }else{
     s = '&nbsp;';
   }
@@ -226,7 +227,7 @@ function getRandomAmount(){
 </script>
 <style>
 @media(max-width: 767px){
-  #tbl{
+  #tbl, input[type='button']{
     font-size: 10px;
   }
 }
