@@ -25,7 +25,7 @@ var auto = false;
 
 var startTime = null;
 $(function(){
-  for( var i = 0; i <= 10; i ++ ){
+  for( var i = 0; i <= 5; i ++ ){
     $('#select_mininglevel').append( '<option value="' + i + '">' + i + '</option>' );
   }
   for( var i = 1; i <= 10; i ++ ){
@@ -41,7 +41,7 @@ $(function(){
         if( kv[0] == 'mininglevel' ){
           mininglevel = parseInt( kv[1] );
           if( mininglevel < 0 ){ mininglevel = 0; }
-          else if( mininglevel > 10 ){ mininglevel = 10; }
+          else if( mininglevel > 5 ){ mininglevel = 5; }
         }
         if( kv[0] == 'goal' ){
           goal = parseInt( kv[1] );
