@@ -25,6 +25,12 @@ var auto = false;
 
 var startTime = null;
 $(function(){
+  for( var i = 0; i <= 10; i ++ ){
+    $('#select_mininglevel').append( '<option value="' + i + '">' + i + '</option>' );
+  }
+  for( var i = 1; i <= 10; i ++ ){
+    $('#select_goal').append( '<option value="' + i + '">' + i + '</option>' );
+  }
   //. URL parameters
   var urlparam = location.search;
   if( urlparam ){
@@ -32,13 +38,32 @@ $(function(){
     params.forEach( function( param ){
       var kv = param.split( '=' );
       if( kv.length == 2 ){
-        if( kv[0] == 'mininglevel' ){ mininglevel = parseInt( kv[1] ); }
-        if( kv[0] == 'goal' ){ goal = parseInt( kv[1] ); }
+        if( kv[0] == 'mininglevel' ){
+          mininglevel = parseInt( kv[1] );
+          if( mininglevel < 0 ){ mininglevel = 0; }
+          else if( mininglevel > 10 ){ mininglevel = 10; }
+        }
+        if( kv[0] == 'goal' ){
+          goal = parseInt( kv[1] );
+          if( goal < 1 ){ goal = 1; }
+          else if( goal > 10 ){ goal = 10; }
+        }
       }
     });
   }
-  $('#jumbotron_mininglevel').text( '' + mininglevel );
-  $('#jumbotron_goal').text( '' + goal );
+  $('#select_mininglevel').val( '' + mininglevel );
+  $('#select_goal').val( '' + goal );
+  $('#select_mininglevel').change( function(){
+    var new_mininglevel = $('#select_mininglevel').val();
+    var new_goal = $('#select_goal').val();
+    location.href = './?mininglevel=' + new_mininglevel + '&goal=' + new_goal;
+  });
+  $('#select_goal').change( function(){
+    var new_mininglevel = $('#select_mininglevel').val();
+    var new_goal = $('#select_goal').val();
+    location.href = './?mininglevel=' + new_mininglevel + '&goal=' + new_goal;
+  });
+
 
   var ts = ( new Date() ).getTime();
   var from = getRandomName();
@@ -228,7 +253,7 @@ function getRandomAmount(){
 <style>
 @media(max-width: 767px){
   #tbl, input[type='button']{
-    font-size: 10px;
+    font-size: 8px;
   }
 }
 </style>
@@ -239,8 +264,8 @@ function getRandomAmount(){
   <div class="jumbotron mt-4">
     <h1 class="display-4">Blockchain Mining</h1>
     <p class="lead">
-      Mining Level = <span id="jumbotron_mininglevel"></span>,
-      Goal = <span id="jumbotron_goal"></span>
+      Mining Level = <span id="jumbotron_mininglevel"><select id="select_mininglevel"></select></span>,
+      Goal = <span id="jumbotron_goal"><select id="select_goal"></select></span>
     </p>
   </div>
 </div>
