@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Blockchain Mining Demo</title>
+<meta charset="utf8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Hashchain Solo"/>
+
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"/>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
+
+<script>
+var mininglevel = 1;
+
+var nonce = 0;
+var prev_hash = null;
+var num = 1;
+var goal = 3;
+var auto = false;
+
+var startTime = null;
+$(function(){
+  for( var i = 0; i <= 5; i ++ ){
+    $('#select_mininglevel').append( '<option value="' + i + '">' + i + '</option>' );
+  }
+  for( var i = 1; i <= 10; i ++ ){
+    $('#select_goal').append( '<option value="' + i + '">' + i + '</option>' );
+  }
+  //. URL parameters
+  var urlparam = location.search;
+  if( urlparam ){
+    var params = urlparam.substring( 1 ).split( '&' );
+    params.forEach( function( param ){
+      var kv = param.split( '=' );
+      if( kv.length == 2 ){
+        if( kv[0] == 'mininglevel' ){
+          mininglevel = parseInt( kv[1] );
+          if( mininglevel < 0 ){ mininglevel = 0; }
+          else if( mininglevel > 5 ){ mininglevel = 5; }
+        }
+        if( kv[0] == 'goal' ){
+          goal = parseInt( kv[1] );
+          if( goal < 1 ){ goal = 1; }
+          else if( goal > 10 ){ goal = 10; }
+        }
+      }
+    });
+  }
+  $('#select_mininglevel').val( '' + mininglevel );
+  $('#select_goal').val( '' + goal );
+  $('#select_mininglevel').change( function(){
+    var new_mininglevel = $('#select_mininglevel').val();
+    var new_goal = $('#select_goal').val();
+    location.href = './?mininglevel=' + new_mininglevel + '&goal=' + new_goal;
+  });
+  $('#select_goal').change( function(){
+    var new_mininglevel = $('#select_mininglevel').val();
+    var new_goal = $('#select_goal').val();
+    location.href = './?mininglevel=' + new_mininglevel + '&goal=' + new_goal;
+  });
+
+
+  var ts = ( new Date() ).getTime();
+  var from = getRandomName();
+  var to = getRandomName();
+  while( from == to ){
+    to = getRandomName();
+  }
+  var amount = getRandomAmount();
+  var text = '{\n  "from": "' + from + '",\n  "to": "' + to + '",\n  "amount":  ' + amount + ',\n  "timestamp": ' + ts + '\n}';
+  $('#jsontext_'+num).html( text );
+
+  incNonce();
+
+  startTime = ( new Date() ).getTime();
+
+  $( '#myModal').on( 'hidden.bs.modal', function(){
+    console.log( '#myModal closing.' );
+  });
+});
+
+function incNonce(){
+  nonce ++;
+  var text = JSON.parse( $('#jsontext_'+num).html() );
+  var hash = getHash( text, nonce );
+  $('#hash_'+num).html( str2button( hash, 20 ) );
+  $('#incNonceBtn_'+num).prop( 'value', nonce );
+}
+
+function notvalid(){
+  //alert( 'ハッシュ値がマイニングルールを満たしていません。' );
+  if( confirm( 'ハッシュ値がマイニングルールを満たしていません。自動計算しますか？' ) ){
+    autoCalc();
+  }
+}
+
+function autoCalc(){
+  auto = true;
+
+  var b = false;
+  do{
+    nonce ++;
+    var text = JSON.parse( $('#jsontext_'+num).html() );
+    var hash = getHash( text, nonce );
+    $('#hash_'+num).html( str2button( hash, 20 ) );
+    $('#incNonceBtn_'+num).prop( 'value', nonce );
+
+    var ctz = countTopZero( hash );
+    b = ( ctz >= mininglevel );
+  }while( !b );
+}
+
+function challenge(){
+  var text = JSON.parse( $('#jsontext_'+num).html() );
+  var hash = getHash( text, nonce );
+
+  var json = {};
+  if( prev_hash ){ json.prev_hash = str4display( prev_hash, 16 ); }
+  json.body = text;
+  json.nonce = nonce;
+  json.hash = str4display( hash, 16 );
+
+  $('#result_'+num).text( JSON.stringify( json, null, 2 ) );
+  $('#jsontext_'+num).prop( 'disabled', 'disabled' );
+  prev_hash = hash;
+
+  if( num >= goal ){
+    var endTime = ( new Date() ).getTime();
+    var t = ( endTime - startTime ) / 1000;
+    //alert( t + '秒かかりました' );
+
+    $('#modaldialog_mininglevel').html( mininglevel );
+    $('#modaldialog_goal').html( goal );
+    $('#modaldialog_second').html( t );
+    $('#modaldialog_timestamp').html( ( new Date() ).getTime() );
+    if( auto ){
+      $('#modaldialog_auto').html( '（途中で自動計算を使いました）' );
+    }
+
+    $('#myModal').modal();
+  }else{
+    num ++;
+    nonce = 0;
+    var tr = '<tr>'
+      + '<td>' + num + '</td>'
+      + '<td><textarea id="jsontext_' + num + '" style="width:100%; height:150px;" readonly="true"></textarea></td>'
+      + '<td><input id="incNonceBtn_' + num + '" type="button" class="btn btn-primary" value="" onClick="incNonce();"/></td>'
+      + '<td id="hash_' + num + '"></td>'
+      + '<td id="block_' + num + '"><blockquote><pre id="result_' + num + '"></pre></blockquote></td>'
+      + '</tr>';
+    $('#tbody').append( tr );
+
+    var ts = ( new Date() ).getTime();
+    var from = getRandomName();
+    var to = getRandomName();
+    while( from == to ){
+      to = getRandomName();
+    }
+    var amount = getRandomAmount();
+    var text = '{\n  "from": "' + from + '",\n  "to": "' + to + '",\n  "amount":  ' + amount + ',\n  "timestamp": ' + ts + '\n}';
+    $('#jsontext_'+num).html( text );
+    incNonce();
+  }
+}
+
+function getHash( text, nonce ){
+  var doc = { body: text, nonce: nonce };
+  if( prev_hash ){ doc.prev_hash = prev_hash; }
+
+  var s512 = sha512.create();
+  s512.update( JSON.stringify( doc ) );
+  var hash = s512.hex();
+
+  return hash;
+}
+
+function countTopZero( str ){
+  var cnt = 0;
+  while( str.length <= cnt || str.charAt( cnt ) == '0' ){
+    cnt ++;
+  }
+  return cnt;
+}
+
+function str4display( str, len ){
+  if( !len ){ len = 10; }
+  var s = '';
+  if( str ){
+    var l = str.length;
+    if( l > len ){
+      s = ( str.substr( 0, len ) + '..' );
+    }else{
+      s = ( str );
+    }
+  }else{
+    s = '&nbsp;';
+  }
+
+  return s;
+}
+
+function str2button( str, len ){
+  if( !len ){ len = 10; }
+  var s = '';
+  if( str ){
+    var l = str.length;
+    var ctz = countTopZero( str );
+    var btn_class = ( ctz < mininglevel ? 'danger' : 'success' );
+
+    if( btn_class == 'success' ){
+      $('#challengeBtn_'+num).css( 'display', 'block' );
+    }else{
+      $('#challengeBtn_'+num).css( 'display', 'none' );
+    }
+
+    str1 = str.split( '"' ).join( '&quot;' );
+    s = '<input type="button" class="btn btn-' + btn_class + '" href="#" title="' + str + '"';
+    if( btn_class == 'success' ){
+      s += ' onClick="challenge();"';
+    }else{
+      s += ' onClick="notvalid();"';
+    }
+
+    s += ' value="';
+    if( l > len ){
+      s += ( str1.substr( 0, len ) + '..' );
+    }else{
+      s += ( str1 );
+    }
+    s += '"/>';
+  }else{
+    s = '&nbsp;';
+  }
+
+  return s;
+}
+
+function getRandomName(){
+  var name = "user_" + Math.floor( Math.random() * 100 );
+  return name;
+}
+
+function getRandomAmount(){
+  var amount = ( Math.floor( Math.random() * 40 ) + 10 ) * 1000;
+  return amount;
+}
+</script>
+<style>
+@media(max-width: 767px){
+  #tbl, input[type='button']{
+    font-size: 8px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="jumbotron mt-4">
+    <h1 class="display-4">Blockchain Mining</h1>
+    <p class="lead">
+      Mining Level = <span id="jumbotron_mininglevel"><select id="select_mininglevel"></select></span>,
+      Goal = <span id="jumbotron_goal"><select id="select_goal"></select></span>
+    </p>
+  </div>
+</div>
+
+<div class="container">
+  <table id="tbl" class="table table-bordered">
+    <thead>
+      <tr><th>#</th><th style="width:30%;">body</th><th>nonce</th><th>hash</th><th>block</th></tr>
+    </thead>
+    <tbody id="tbody">
+      <tr>
+        <td>1</td>
+        <td>
+          <textarea id="jsontext_1" style="width:100%; height:150px;" readonly="true"></textarea>
+        </td>
+        <td>
+          <input id="incNonceBtn_1" type="button" class="btn btn-primary" value="" onClick="incNonce();"/>
+        </td>
+        <td id="hash_1">
+        </td>
+        <td id="block_1">
+          <blockquote><pre id="result_1">
+          </pre></blockquote>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal bd-example-modal-lg fade" id="myModal" tabindex="-1" role="dialog" aria-labbelledby="myModal" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="myModalLabel">nonce</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="myModalBody">
+        <div>Mining Level = <span id="modaldialog_mininglevel"></span></div>
+        <div>Goal = <span id="modaldialog_goal"></span></div>
+        <div>Second = <span id="modaldialog_second"></span></div>
+        <div>Timestamp = <span id="modaldialog_timestamp"></span></div>
+        <div><span id="modaldialog_auto"></span></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
