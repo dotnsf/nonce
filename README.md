@@ -47,4 +47,4 @@ https://github.com/dotnsf/nonce/blob/master/LICENSE
 
 ## Copyright
 
-2019 [K.Kimura @ Juge.Me](https://github.com/dotnsf) all rights reserved.
+2019-2020 [K.Kimura @ Juge.Me](https://github.com/dotnsf) all rights reserved.

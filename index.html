@@ -13,14 +13,19 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
+<style>
+.tr_hidden{
+  display:none;
+}
+</style>
 
 <script>
 var mininglevel = 1;
-
-var nonce = 0;
-var prev_hash = null;
-var num = 1;
 var goal = 3;
+
+var current_max = 1;
+
+var nonces = [];
 var auto = false;
 
 var startTime = null;
@@ -28,9 +33,10 @@ $(function(){
   for( var i = 0; i <= 5; i ++ ){
     $('#select_mininglevel').append( '<option value="' + i + '">' + i + '</option>' );
   }
-  for( var i = 1; i <= 10; i ++ ){
+  for( var i = 1; i <= 5; i ++ ){
     $('#select_goal').append( '<option value="' + i + '">' + i + '</option>' );
   }
+
   //. URL parameters
   var urlparam = location.search;
   if( urlparam ){
@@ -64,113 +70,17 @@ $(function(){
     location.href = './?mininglevel=' + new_mininglevel + '&goal=' + new_goal;
   });
 
-
-  var ts = ( new Date() ).getTime();
-  var from = getRandomName();
-  var to = getRandomName();
-  while( from == to ){
-    to = getRandomName();
+  for( var i = 0; i < mininglevel; i ++ ){
+    nonces.push( 0 );
   }
-  var amount = getRandomAmount();
-  var text = '{\n  "from": "' + from + '",\n  "to": "' + to + '",\n  "amount":  ' + amount + ',\n  "timestamp": ' + ts + '\n}';
-  $('#jsontext_'+num).html( text );
 
-  incNonce();
-
-  startTime = ( new Date() ).getTime();
-
-  $('#myModal').on( 'hidden.bs.modal', function(){
-    console.log( '#myModal closing.' );
-  });
-
-  $('#jsontext_1').keyup( function(){
-    updateHash();
-  });
-});
-
-function incNonce(){
-  nonce ++;
-  updateHash();
-  $('#incNonceBtn_'+num).prop( 'value', nonce );
-}
-
-function updateHash(){
-  var text = $('#jsontext_'+num).val();
-  try{
-    text = JSON.parse( text );
-  }catch( e ){
-  }
-  var hash = getHash( text, nonce );
-  $('#hash_'+num).html( str2button( hash, 20 ) );
-}
-
-function notvalid(){
-  if( confirm( 'ハッシュ値がマイニングルールを満たしていません。自動計算しますか？' ) ){
-    autoCalc();
-  }
-}
-
-function autoCalc(){
-  auto = true;
-
-  var b = false;
-  do{
-    nonce ++;
-    var text = $('#jsontext_'+num).val();
-    try{
-      text = JSON.parse( text );
-    }catch( e ){
-    }
-    var hash = getHash( text, nonce );
-    $('#hash_'+num).html( str2button( hash, 20 ) );
-    $('#incNonceBtn_'+num).prop( 'value', nonce );
-
-    var ctz = countTopZero( hash );
-    b = ( ctz >= mininglevel );
-  }while( !b );
-}
-
-function challenge(){
-  var text = $('#jsontext_'+num).val();
-  try{
-    text = JSON.parse( text );
-  }catch( e ){
-  }
-  var hash = getHash( text, nonce );
-
-  var json = {};
-  if( prev_hash ){ json.prev_hash = str4display( prev_hash, 16 ); }
-  json.body = text;
-  json.nonce = nonce;
-  json.hash = str4display( hash, 16 );
-
-  $('#result_'+num).text( JSON.stringify( json, null, 2 ) );
-  $('#jsontext_'+num).prop( 'disabled', 'disabled' );
-  prev_hash = hash;
-
-  if( num >= goal ){
-    var endTime = ( new Date() ).getTime();
-    var t = ( endTime - startTime ) / 1000;
-    //alert( t + '秒かかりました' );
-
-    $('#modaldialog_mininglevel').html( mininglevel );
-    $('#modaldialog_goal').html( goal );
-    $('#modaldialog_second').html( t );
-    $('#modaldialog_timestamp').html( ( new Date() ).getTime() );
-    if( auto ){
-      $('#modaldialog_auto').html( '（途中で自動計算を使いました）' );
-    }
-
-    $('#myModal').modal();
-  }else{
-    num ++;
-    nonce = 0;
-    var tr = '<tr>'
-      + '<td>' + num + '</td>'
-      + '<td><textarea id="jsontext_' + num + '" style="width:100%; height:150px;"></textarea></td>'
-      + '<td><input id="incNonceBtn_' + num + '" type="button" class="btn btn-primary" value="" onClick="incNonce();"/></td>'
-      + '<td id="hash_' + num + '"></td>'
-      + '<td id="block_' + num + '"><blockquote><pre id="result_' + num + '"></pre></blockquote></td>'
+  for( var i = 0; i < goal; i ++ ){
+    var tr = '<tr id="tr_' + i + '" class="tr_hidden">'
+      + '<td><span id="level' + i + '">' + i + '</span></td>'
+      + '<td><textarea class="jsontext" id="jsontext_' + i + '" style="width:100%; height:150px;"></textarea></td>'
+      + '<td><input id="incNonceBtn_' + i + '" type="button" class="btn btn-primary incNonceBtn" value="0" onClick="incNonce(' + i + ');"/></td>'
+      + '<td id="hash_' + i + '"></td>'
+      + '<td id="block_' + i + '"><blockquote><pre id="result_' + i + '"></pre></blockquote></td>'
       + '</tr>';
     $('#tbody').append( tr );
 
@@ -182,18 +92,131 @@ function challenge(){
     }
     var amount = getRandomAmount();
     var text = '{\n  "from": "' + from + '",\n  "to": "' + to + '",\n  "amount":  ' + amount + ',\n  "timestamp": ' + ts + '\n}';
-    $('#jsontext_'+num).html( text );
-    incNonce();
+    $('#jsontext_'+i).html( text );
+  }
 
-    $('#jsontext_'+num).keyup( function(){
-      updateHash();
-    });
+  current_max = 0;
+  incNonce(current_max);
+
+  startTime = ( new Date() ).getTime();
+
+  $('#myModal').on( 'hidden.bs.modal', function(){
+    console.log( '#myModal closing.' );
+  });
+
+  $('.jsontext').keyup( function(){
+    var id = $(this).prop( 'id' );
+    var tmp = id.split( '_' );
+    var level = parseInt( tmp[1] );
+    updateHash( level );
+  });
+
+  $('#tr_0').removeClass( 'tr_hidden' );  //. 無効？
+});
+
+function incNonce( level ){
+  if( level != current_max ){
+    $('#result_'+level).css( 'background', '#ffcccc' );
+  }
+  nonces[level] ++;
+  updateHash( level );
+  $('#incNonceBtn_'+level).prop( 'value', nonces[level] );
+}
+
+function updateHash( level ){
+  var text = $('#jsontext_'+level).val();
+  try{
+    text = JSON.parse( text );
+  }catch( e ){
+  }
+  var hash = getHash( text, nonces[level], level );
+  $('#hash_'+level).html( str2button( hash, 20, level ) );
+}
+
+function notvalid( level ){
+  if( confirm( 'ハッシュ値がマイニングルールを満たしていません。自動計算しますか？' ) ){
+    autoCalc( level );
   }
 }
 
-function getHash( text, nonce ){
+function autoCalc( level ){
+  auto = true;
+
+  var b = false;
+  do{
+    nonces[level] ++;
+    var text = $('#jsontext_'+level).val();
+    try{
+      text = JSON.parse( text );
+    }catch( e ){
+    }
+    var hash = getHash( text, nonces[level], level );
+    $('#hash_'+level).html( str2button( hash, 20, level ) );
+    $('#incNonceBtn_'+level).prop( 'value', nonces[level] );
+
+    var ctz = countTopZero( hash );
+    b = ( ctz >= mininglevel );
+  }while( !b );
+}
+
+function challenge( level ){
+  var text = $('#jsontext_'+level).val();
+  try{
+    text = JSON.parse( text );
+  }catch( e ){
+  }
+  var hash = getHash( text, nonces[level], level );
+
+  var json = {};
+  //if( prev_hash ){ json.prev_hash = str4display( prev_hash, 16 ); }  //. level の１つ前の hash 値
+  if( level > 0 ){
+    json.prev_hash = $('#hashBtn_'+(level-1)).val();
+  }
+  json.body = text;
+  json.nonce = nonces[level];
+  json.hash = str4display( hash, 16 );
+
+  $('#result_'+level).css( 'background', '#ffffff' );
+  $('#result_'+level).text( JSON.stringify( json, null, 2 ) );
+  $('#jsontext_'+level).prop( 'disabled', 'disabled' );
+
+  if( ( level + 1 ) >= goal ){
+    var endTime = ( new Date() ).getTime();
+    var t = ( endTime - startTime ) / 1000;
+    //alert( t + '秒かかりました' );
+
+    //. ボタンを無効にする
+    $('.incNonceBtn').prop( 'disabled', 'disabled' );
+    $('.hashBtn').prop( 'disabled', 'disabled' );
+
+    $('#modaldialog_mininglevel').html( mininglevel );
+    $('#modaldialog_goal').html( goal );
+    $('#modaldialog_second').html( t );
+    $('#modaldialog_timestamp').html( ( new Date() ).getTime() );
+    if( auto ){
+      $('#modaldialog_auto').html( '（途中で自動計算を使いました）' );
+    }
+
+    $('#myModal').modal();
+  }else if( level < current_max ){
+    $('#hashBtn_'+(level+1)).removeClass('btn-success');
+    $('#hashBtn_'+(level+1)).addClass('btn-danger');
+  }else{
+    level ++;
+    nonces[level] = 0;
+
+    if( current_max <= level ){ current_max = level; }
+    $('#tr_'+level).removeClass( 'tr_hidden' );
+
+    incNonce(level);
+  }
+}
+
+function getHash( text, nonce, level ){
   var doc = { body: text, nonce: nonce };
-  if( prev_hash ){ doc.prev_hash = prev_hash; }
+  if( level > 0 ){
+    doc.prev_hash = $('#hashBtn_'+(level-1)).prop('title');
+  }
 
   var s512 = sha512.create();
   s512.update( JSON.stringify( doc ) );
@@ -227,7 +250,7 @@ function str4display( str, len ){
   return s;
 }
 
-function str2button( str, len ){
+function str2button( str, len, level ){
   if( !len ){ len = 10; }
   var s = '';
   if( str ){
@@ -236,17 +259,17 @@ function str2button( str, len ){
     var btn_class = ( ctz < mininglevel ? 'danger' : 'success' );
 
     if( btn_class == 'success' ){
-      $('#challengeBtn_'+num).css( 'display', 'block' );
+      $('#challengeBtn_'+level).css( 'display', 'block' );
     }else{
-      $('#challengeBtn_'+num).css( 'display', 'none' );
+      $('#challengeBtn_'+level).css( 'display', 'none' );
     }
 
     str1 = str.split( '"' ).join( '&quot;' );
-    s = '<input type="button" class="btn btn-' + btn_class + '" href="#" title="' + str + '"';
+    s = '<input id="hashBtn_' + level + '" type="button" class="hashBtn btn btn-' + btn_class + '" href="#" title="' + str + '"';
     if( btn_class == 'success' ){
-      s += ' onClick="challenge();"';
+      s += ' onClick="challenge(' + level + ');"';
     }else{
-      s += ' onClick="notvalid();"';
+      s += ' onClick="notvalid(' + level + ');"';
     }
 
     s += ' value="';
@@ -272,14 +295,11 @@ function getRandomAmount(){
   var amount = ( Math.floor( Math.random() * 40 ) + 10 ) * 1000;
   return amount;
 }
-</script>
-<style>
-@media(max-width: 767px){
-  #tbl, input[type='button']{
-    font-size: 8px;
-  }
+
+function validateAll(){
+
 }
-</style>
+</script>
 </head>
 <body>
 
@@ -299,21 +319,6 @@ function getRandomAmount(){
       <tr><th>#</th><th style="width:30%;">body</th><th>nonce</th><th>hash</th><th>block</th></tr>
     </thead>
     <tbody id="tbody">
-      <tr>
-        <td>1</td>
-        <td>
-          <textarea id="jsontext_1" style="width:100%; height:150px;"></textarea>
-        </td>
-        <td>
-          <input id="incNonceBtn_1" type="button" class="btn btn-primary" value="" onClick="incNonce();"/>
-        </td>
-        <td id="hash_1">
-        </td>
-        <td id="block_1">
-          <blockquote><pre id="result_1">
-          </pre></blockquote>
-        </td>
-      </tr>
     </tbody>
   </table>
 </div>
